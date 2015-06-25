@@ -8,12 +8,15 @@ Last modified 25.6.2015
 __author__ = 'TOSS'
 
 import networkx as nx
+import TracingUtils as tu
 from datetime import datetime
 from collections import defaultdict
+
 
 def date_in_range(start, end, x):
     """
     Returns True if start <= x <= end on condition that start <= end (see else).
+
 
     Parameters:
     ------------
@@ -25,6 +28,7 @@ def date_in_range(start, end, x):
     Returns:
 
     :return: True if start <= x <= end on condition that start <= end
+    :rtype : boolean
     """
 
     if start <= end:
@@ -68,18 +72,24 @@ def CTracing(G, tstart, tend, source=None):
         nodes = [source]
 
     for start in nodes:
-        stack = [(start,iter(G[start]))]
+        stack = [(start, iter(G[start]))]
         while stack:
             parent, children = stack[-1]
             try:
                 child = next(children)
-                #
                 # Contact date (cdate) will be considered when cdate in (tstart,tend)
                 # FIXME: check if it is possible to write
-                # if date_in_range(G[parent]['DoI'], tend, G[parent][child]['cdate']):
-                if date_in_range(tstart, tend, G[parent][child]['cdate']):
-                    G[child]['DoI'] = G[parent][child]['cdate']
-                    stack.append((child,iter(G[child])))
+                if date_in_range(G.node[parent]['DoI'], tend, G[parent][child][0]['cdate']):
+                    if ('Infektor' in G.node[child]) and ('DoI' in G.node[child]) and (
+                        G[parent][child][0]["cdate"] == G.node[child]["DoI"] or child == start):
+                        print " rejected contact : ", parent, " -> ", child, " at date: ", G.node[child][
+                            'DoI'], " Infektors 4 child, parent. AND child", G.node[child]['Infektor'], G.node[parent]['Infektor'], child
+                    else:
+                        G.node[child]['DoI'] = G[parent][child][0]['cdate']
+                        G.node[child]['Infektor'] = parent
+                        print "relevant contact : ", parent, " -> ", child, " at date: ", G.node[child][
+                            'DoI'], " Infektors ", G.node[child]['Infektor'], G.node[parent]['Infektor'], child
+                        stack.append((child, iter(G[child])))
             except StopIteration:
                 stack.pop()
 
@@ -87,3 +97,26 @@ def CTracing(G, tstart, tend, source=None):
 #
 if __name__ == "__main__":
     fn = "/Users/TOSS/Documents/Projects/R/IOCC/data/ctrans.csv"
+    #
+    # create a networkx MultiDiGraph
+    G = tu.read_attr_edgelist(fn)
+    #
+    # Create some output
+    print G.number_of_nodes()
+    print G.number_of_edges()
+    #
+    # settings to run CTracing
+    i_node = '2645'
+    sdate = "2005-08-02"
+    edate = "2005-10-31"
+    dformat = "%Y-%m-%d"
+
+    s_date = datetime.strptime(sdate, dformat).date()
+    e_date = datetime.strptime(edate, dformat).date()
+    #
+    # set attributes of first infected node
+    G.node[i_node]['DoI'] = s_date
+    G.node[i_node]['Infektor'] = i_node
+    #
+    # start dfs Tracing
+    CTracing(G, s_date, e_date, i_node)
