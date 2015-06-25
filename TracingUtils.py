@@ -52,11 +52,11 @@ def read_attr_edgelist(fn,first_recod=False):
     if first_recod:
         nGo = nx.convert_node_labels_to_integers(Go, label_attribute="BNR")
         for s,t,a in nGo.edges(data=True):
-            nGo[s][t]['cdate'] = datetime.strptime(a.get('cdate'),"%Y-%m-%d").date()
+            #nGo[s][t]['cdate'] = datetime.strptime(a.get('cdate'),"%Y-%m-%d").date()
             a['cdate'] = datetime.strptime(a.get('cdate'),"%Y-%m-%d").date()
         return nGo, nx.get_node_attributes(nGo,'BNR')
     else:
         for s,t,a in Go.edges(data=True):
-            Go[s][t]['cdate'] = datetime.strptime(a.get('cdate'),"%Y-%m-%d").date()
+            #Go[s][t]['cdate'] = datetime.strptime(a.get('cdate'),"%Y-%m-%d").date()
             a['cdate'] = datetime.strptime(a.get('cdate'),"%Y-%m-%d").date()
         return Go
