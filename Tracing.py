@@ -83,3 +83,7 @@ def CTracing(G, tstart, tend, source=None):
             except StopIteration:
                 stack.pop()
 
+# This perfoems tracing with a test data set
+#
+if __name__ == "__main__":
+    fn = "/Users/TOSS/Documents/Projects/R/IOCC/data/ctrans.csv"
