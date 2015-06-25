@@ -45,16 +45,16 @@ def read_attr_edgelist(fn,first_recod=False):
 
     Go = nx.parse_edgelist(felines, create_using=nx.MultiDiGraph(),
                            data=(('id', str),
-                                 ('D', str),
+                                 ('cdate', str),
                                  ('n',int),
                                  ('Species', str)))
 
     if first_recod:
         nGo = nx.convert_node_labels_to_integers(Go, label_attribute="BNR")
         for s,t,a in nGo.edges(data=True):
-            a['D'] = datetime.strptime(a.get('D'),"%Y-%m-%d").date()
+            a['cdate'] = datetime.strptime(a.get('cdate'),"%Y-%m-%d").date()
         return nGo, nx.get_node_attributes(nGo,'BNR')
     else:
         for s,t,a in Go.edges(data=True):
-            a['D'] = datetime.strptime(a.get('D'),"%Y-%m-%d").date()
+            a['cdate'] = datetime.strptime(a.get('cdate'),"%Y-%m-%d").date()
         return Go
