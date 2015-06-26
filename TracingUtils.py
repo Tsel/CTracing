@@ -58,5 +58,7 @@ def read_attr_edgelist(fn,first_recod=False):
     else:
         for s,t,a in Go.edges(data=True):
             #Go[s][t]['cdate'] = datetime.strptime(a.get('cdate'),"%Y-%m-%d").date()
+            #print "cdate of edge ", a['cdate']
             a['cdate'] = datetime.strptime(a.get('cdate'),"%Y-%m-%d").date()
+            #print " cdate of edge ", a['cdate']
         return Go

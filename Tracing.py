@@ -37,6 +37,54 @@ def date_in_range(start, end, x):
         return start <= x or x <= end
 
 
+def valid_contact(G, index_node, parent, child, t):
+    """
+    Checks the validity of the contact between parent and child
+    :type child: str
+    :type index_node: str
+    :type G: G is a networkx DiMultiGraph
+    :param G: The network we are working on.
+    :param index_node: is the node where infection started
+    :param parent: The contact parent -> child is considered. This is node parent
+    :param child: The conatct parent chil is considered: This is node child
+    :param t: the end of the observational period
+    
+    :return: :rtype boolean. Retruns t True, if the conact between parent and child is valid.
+    
+    The following conditions are checked:
+    1.) Does the time of contact between parent and child take place between the Date of infection of parent and the 
+        end of the observational period t?
+    2.) If child has attributes 'Infektor' and 'DoI', then it must have been visited before:
+        Check whether the 'Infektor' is identical, AND if DoI of child is identical to time of contact.
+    3.) Check if child is start. 
+        In this case we would loop back to the source of infection (start) which is not possible
+    4.) Check for loop parent -> child -> parent, which is not possible
+
+    """
+    #
+    # Check condition 1
+    # returns True if contact is within specified date range
+    c1 = date_in_range(G.node[parent]['DoI'], t, G[parent][child][0]['cdate'])
+    #
+    # Check condition 2
+    if ('Infektor' in G.node[child]) and ('DoI' in G.node[child]):
+        c2 = G[parent][child][0]["cdate"] != G.node[child]["DoI"]
+    else:
+        c2 = True
+    
+    #
+    # Check condition 3
+    assert isinstance(index_node, str)
+    c3 = child != index_node
+    #
+    # Check condition 4
+    # Infektor of parent is unequal child
+    c4 = G.node[parent]['Infektor'] != child
+
+    return (c1 and c2 and c3 and c4)
+
+    
+
 def CTracing(G, tstart, tend, source=None):
     """
     This is an adaption of tracing_dfs_edges from networkx version 1.9.1.
@@ -65,6 +113,7 @@ def CTracing(G, tstart, tend, source=None):
     #
     # FIXME: Example to be provided in the description of this routine
     # FIXME: boolean variable required to change between foreward and backward tracing
+    # FIXME: reject loops
 
     if source is None:
         nodes = G[0]
@@ -77,19 +126,26 @@ def CTracing(G, tstart, tend, source=None):
             parent, children = stack[-1]
             try:
                 child = next(children)
-                # Contact date (cdate) will be considered when cdate in (tstart,tend)
-                # FIXME: check if it is possible to write
-                if date_in_range(G.node[parent]['DoI'], tend, G[parent][child][0]['cdate']):
-                    if ('Infektor' in G.node[child]) and ('DoI' in G.node[child]) and (
-                        G[parent][child][0]["cdate"] == G.node[child]["DoI"] or child == start):
-                        print " rejected contact : ", parent, " -> ", child, " at date: ", G.node[child][
-                            'DoI'], " Infektors 4 child, parent. AND child", G.node[child]['Infektor'], G.node[parent]['Infektor'], child
-                    else:
-                        G.node[child]['DoI'] = G[parent][child][0]['cdate']
-                        G.node[child]['Infektor'] = parent
-                        print "relevant contact : ", parent, " -> ", child, " at date: ", G.node[child][
-                            'DoI'], " Infektors ", G.node[child]['Infektor'], G.node[parent]['Infektor'], child
-                        stack.append((child, iter(G[child])))
+                if valid_contact(G,source,parent, child, tend):
+                    G.node[child]['DoI'] = G[parent][child][0]['cdate']
+                    G.node[child]['Infektor'] = parent
+                    print "relevant contact : ", parent, " -> ", child, " at date: ", G.node[child][
+                        'DoI'], " Infektors ", G.node[child]['Infektor'], G.node[parent]['Infektor'], child
+                    stack.append((child, iter(G[child])))
+                #
+                # # Contact date (cdate) will be considered when cdate in (G.node[parent&%'DoI'],tend)
+                # if date_in_range(G.node[parent]['DoI'], tend, G[parent][child][0]['cdate']):
+                #     if ('Infektor' in G.node[child]) and ('DoI' in G.node[child]) and (
+                #                     G[parent][child][0]["cdate"] == G.node[child]["DoI"] or child == start):
+                #         print "===> rejected contact : ", parent, " -> ", child, " at date: ", G.node[child][
+                #             'DoI'], " Infektor 4 child and parent. child and parent ID", G.node[child]['Infektor'], \
+                #             G.node[parent]['Infektor'], child, parent
+                #     else:
+                #         G.node[child]['DoI'] = G[parent][child][0]['cdate']
+                #         G.node[child]['Infektor'] = parent
+                #         print "relevant contact : ", parent, " -> ", child, " at date: ", G.node[child][
+                #             'DoI'], " Infektors ", G.node[child]['Infektor'], G.node[parent]['Infektor'], child
+                #         stack.append((child, iter(G[child])))
             except StopIteration:
                 stack.pop()
 
@@ -120,3 +176,4 @@ if __name__ == "__main__":
     #
     # start dfs Tracing
     CTracing(G, s_date, e_date, i_node)
+
